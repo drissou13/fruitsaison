@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fruits de saison animés</title>
+
+<style>
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: linear-gradient(#b3e5fc, #ffffff);
+  font-family: sans-serif;
+}
+
+#ui {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  text-align: center;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+canvas {
+  display: block;
+}
+</style>
+</head>
+
+<body>
+
+<div id="ui">
+  <h2 id="season">🌸 Printemps</h2>
+  <button onclick="nextSeason()">Changer de saison</button>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* 🎵 Sons */
+const sounds = {
+  spring: new Audio("https://lasonotheque.org/UPLOAD/mp3/0999.mp3"),
+  summer: new Audio("https://lasonotheque.org/UPLOAD/mp3/1046.mp3"),
+  autumn: new Audio("https://lasonotheque.org/UPLOAD/mp3/0740.mp3"),
+  winter: new Audio("https://lasonotheque.org/UPLOAD/mp3/0208.mp3")
+};
+
+/* 🍎 Images */
+const images = {
+  apple: loadImg("https://png.pngtree.com/png-vector/20231017/ourmid/pngtree-fresh-apple-fruit-red-png-image_10203073.png"),
+  strawberry: loadImg("https://www.freeiconspng.com/uploads/strawberry-png-30.png"),
+  orange: loadImg("https://static.vecteezy.com/system/resources/thumbnails/013/442/043/small/slice-of-orange-free-png.png"),
+  grape: loadImg("https://static.vecteezy.com/system/resources/thumbnails/046/822/683/small/a-cluster-of-grapes-isolated-on-a-transparent-background-png.png")
+};
+
+function loadImg(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
+
+/* 🍂 Saisons */
+const seasons = [
+  { name: "🌸 Printemps", sound: "spring", fruits: ["strawberry"] },
+  { name: "☀️ Été", sound: "summer", fruits: ["orange", "strawberry"] },
+  { name: "🍂 Automne", sound: "autumn", fruits: ["apple", "grape"] },
+  { name: "❄️ Hiver", sound: "winter", fruits: ["orange", "apple"] }
+];
+
+let seasonIndex = 0;
+let fruits = [];
+const gravity = 0.4;
+
+/* 🍏 Classe Fruit */
+class Fruit {
+  constructor(type) {
+    this.type = type;
+    this.img = images[type];
+    this.size = 50;
+    this.x = Math.random() * (canvas.width - this.size);
+    this.y = -50;
+    this.vy = Math.random() * 2;
+  }
+
+  update() {
+    this.vy += gravity;
+    this.y += this.vy;
+
+    if (this.y + this.size > canvas.height) {
+      this.y = canvas.height - this.size;
+      this.vy *= -0.6; // rebond
+    }
+  }
+
+  draw() {
+    ctx.drawImage(this.img, this.x, this.y, this.size, this.size);
+  }
+
+  isClicked(mx, my) {
+    return mx > this.x && mx < this.x + this.size &&
+           my > this.y && my < this.y + this.size;
+  }
+}
+
+/* 🎮 Interaction clic */
+canvas.addEventListener("click", e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  fruits = fruits.filter(fruit => {
+    if (fruit.isClicked(mx, my)) {
+      // petit effet visuel
+      ctx.beginPath();
+      ctx.arc(mx, my, 30, 0, Math.PI * 2);
+      ctx.stroke();
+      return false;
+    }
+    return true;
+  });
+});
+
+/* 🔄 Saison */
+function loadSeason() {
+  fruits = [];
+  document.getElementById("season").textContent = seasons[seasonIndex].name;
+
+  Object.values(sounds).forEach(s => s.pause());
+  sounds[seasons[seasonIndex].sound].play();
+
+  for (let i = 0; i < 10; i++) {
+    const type = seasons[seasonIndex].fruits[
+      Math.floor(Math.random() * seasons[seasonIndex].fruits.length)
+    ];
+    fruits.push(new Fruit(type));
+  }
+}
+
+function nextSeason() {
+  seasonIndex = (seasonIndex + 1) % seasons.length;
+  loadSeason();
+}
+
+/* 🎬 Animation */
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  fruits.forEach(f => {
+    f.update();
+    f.draw();
+  });
+  requestAnimationFrame(animate);
+}
+
+loadSeason();
+animate();
+</script>
+
+</body>
+</html>
